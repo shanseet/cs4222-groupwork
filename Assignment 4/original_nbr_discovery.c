@@ -70,14 +70,6 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     for(i = 0; i < NUM_SEND; i++){
       leds_on(LEDS_RED);
       
-      data_packet.seq++;
-      curr_timestamp = clock_time();
-      data_packet.timestamp = curr_timestamp;
-    
-      printf("NodeID: %d  @ RSSI: %d\n", node_id,(signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI));
-
-      printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
-
       packetbuf_copyfrom(&data_packet, (int)sizeof(data_packet_struct));
       broadcast_send(&broadcast);
       leds_off(LEDS_RED);
@@ -141,7 +133,6 @@ PROCESS_THREAD(cc2650_nbr_discovery_process, ev, data)
 
   // initialize data packet
   data_packet.src_id = node_id;
-  data_packet.seq = 0;
 
   // Start sender in one millisecond.
   rtimer_set(&rt, RTIMER_NOW() + (RTIMER_SECOND / 1000), 1, (rtimer_callback_t)sender_scheduler, NULL);
