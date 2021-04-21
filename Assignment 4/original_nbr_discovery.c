@@ -1,3 +1,4 @@
+#include <map>
 #include "contiki.h"
 #include "dev/leds.h"
 #include <stdio.h>
@@ -25,6 +26,7 @@ static struct pt pt;
 /*---------------------------------------------------------------------------*/
 static data_packet_struct received_packet;
 static data_packet_struct data_packet;
+std::map<int, int [2]> nodes;
 unsigned long curr_timestamp;
 /*---------------------------------------------------------------------------*/
 PROCESS(cc2650_nbr_discovery_process, "cc2650 neighbour discovery process");
@@ -36,9 +38,17 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
   leds_on(LEDS_GREEN);
   memcpy(&received_packet, packetbuf_dataptr(), sizeof(data_packet_struct));
 
-  printf("Send seq# %lu  @ %8lu  %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
+  int currNode = (int)received_packet.src_id;
+  curr_timestamp = clock_time();
+  if (nodes.find(currNode) == nodes.end()) {
+    printf("%d DETECT %d", curr_timestamp, currNode);
+    nodes[currNode][0] = nodes[currNode][1] = curr_timestamp;
+  }
+  else {
+    printf("Received Node %lu || RSSI: %d\n", currNode, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI));
+    nodes[currNode][1] = curr_timestamp;
+  }
 
-  printf("Received packet from node %lu with sequence number %lu and timestamp %3lu.%03lu\n", received_packet.src_id, received_packet.seq, received_packet.timestamp / CLOCK_SECOND, ((received_packet.timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
   leds_off(LEDS_GREEN);
 }
 static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
@@ -63,6 +73,8 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       data_packet.seq++;
       curr_timestamp = clock_time();
       data_packet.timestamp = curr_timestamp;
+    
+      printf("NodeID: %d  @ RSSI: %d\n", node_id,(signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI));
 
       printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
 
