@@ -115,11 +115,20 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       }
       leds_off(LEDS_BLUE);
     }
-
+    // 3D array: nodes
     curr_timestamp = clock_time();
-    std::map<int, int [2]>::iterator it = mapOfWordCount.begin();
+    for(i=0; i<50; i++) {
+        if (nodes[i][0] == nodeID) {
+            if ( (curr_timestamp - nodes[i][2]) > 30 ) {
+                // nodes[i][1] = first detected time
+                // nodes[i][2] = most recent time
+                printf("%d LEAVE %d\n", curr_timestamp, nodeID);
+                time_in_proximity = nodes[i][2] - nodes[i][1];
+                printf("Time in proximity: %d\n", time_in_proximity)
+            }       
+        }
+    }
   }
-
   PT_END(&pt);
 }
 /*---------------------------------------------------------------------------*/
