@@ -48,9 +48,11 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
   memcpy(&received_packet, packetbuf_dataptr(), sizeof(data_packet_struct));
 
   int currNode = (int)received_packet.src_id;
+  int node_index = indexOf(nodes, numNodes+1, currNode);
   curr_timestamp = clock_time();
-  if (indexOf(                                                                                                                                                                                                                                              nodes, numNodes+1, currNode) == -1) {
-    printf("%lu DETECT %d", curr_timestamp, currNode);
+  // Detection of a new node
+  if (node_index == -1) {
+    printf("%lu DETECT %d\n", curr_timestamp, currNode);
     numNodes++;
     // Add new nodeID to array
     nodes[numNodes][0] = currNode;
@@ -58,9 +60,17 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
     nodes[numNodes][1] = nodes[numNodes][2] = curr_timestamp;
   }
   else {
-    printf("Received Node %d || RSSI: %d\n", currNode, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI));
-    // Update only the most recent timestamp
-    nodes[numNodes][2] = curr_timestamp;
+    // Detection of nodes that left but came back
+    if (nodes[node_index][1] == 0) {
+      printf("%lu DETECT %d\n", curr_timestamp, currNode);
+      nodes[node_index][1] = nodes[node_index][2] = (int)curr_timestamp;
+    }
+    // For nodes already in the array
+    else {
+      printf("Received Node %d || RSSI: %d\n", currNode, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI));
+      // Update only the most recent timestamp
+      nodes[node_index][2] = (int)curr_timestamp;
+    }
   }
 
   leds_off(LEDS_GREEN);
@@ -74,8 +84,8 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
   int time_in_proximity=0;
   PT_BEGIN(&pt);
 
-  curr_timestamp = clock_time(); 
-  printf("Start clock %lu ticks, timestamp %3lu.%03lu\n", curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
+  // curr_timestamp = clock_time(); 
+  // printf("Start clock %lu ticks, timestamp %3lu.%03lu\n", curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
 
   while(1){
 
@@ -106,7 +116,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
       // the average is SLEEP_CYCLE 
       NumSleep = random_rand() % (2 * SLEEP_CYCLE + 1);  
-      printf(" Sleep for %d slots \n",NumSleep);
+      // printf(" Sleep for %d slots \n",NumSleep);
 
       // NumSleep should be a constant or static int
       for(i = 0; i < NumSleep; i++){
@@ -118,12 +128,18 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     // 3D array: nodes
     curr_timestamp = clock_time();
     for(i=0; i<50; i++) {
-      if ( (curr_timestamp - nodes[i][2]) > 30 ) {
+      if ((((int)curr_timestamp - nodes[i][2]) > 30000) && (nodes[i][2] > 0)) {
           // nodes[i][1] = first detected time
           // nodes[i][2] = most recent time
           printf("%lu LEAVE %d\n", curr_timestamp, nodes[i][0]);
           time_in_proximity = nodes[i][2] - nodes[i][1];
+          
+          // Reset nodes that left
+          nodes[i][1] = nodes[i][2] = 0;
           printf("Time in proximity: %d\n", time_in_proximity);
+      }
+      else {
+        continue;
       }
     }
   }
