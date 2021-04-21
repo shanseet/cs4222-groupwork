@@ -32,11 +32,11 @@ unsigned long curr_timestamp;
 PROCESS(cc2650_nbr_discovery_process, "cc2650 neighbour discovery process");
 AUTOSTART_PROCESSES(&cc2650_nbr_discovery_process);
 /*---------------------------------------------------------------------------*/
-int indexOf( const int a[], int size, int value )
+int indexOf( const int a[][3], int size, int value )
 {
     int index = 0;
 
-    while ( index < size && a[index][0] != value ) ++index;
+    while ( index < size && a[index][0] != value ) ++index;                                               
 
     return ( index == size ? -1 : index );
 }
@@ -49,8 +49,8 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 
   int currNode = (int)received_packet.src_id;
   curr_timestamp = clock_time();
-  if (nodes.indexOf(nodes, numNodes+1, currNode) == -1) {
-    printf("%d DETECT %d", curr_timestamp, currNode);
+  if (indexOf(                                                                                                                                                                                                                                              nodes, numNodes+1, currNode) == -1) {
+    printf("%lu DETECT %d", curr_timestamp, currNode);
     numNodes++;
     // Add new nodeID to array
     nodes[numNodes][0] = currNode;
@@ -58,7 +58,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
     nodes[numNodes][1] = nodes[numNodes][2] = curr_timestamp;
   }
   else {
-    printf("Received Node %lu || RSSI: %d\n", currNode, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI));
+    printf("Received Node %d || RSSI: %d\n", currNode, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI));
     // Update only the most recent timestamp
     nodes[numNodes][2] = curr_timestamp;
   }
@@ -71,6 +71,7 @@ static struct broadcast_conn broadcast;
 char sender_scheduler(struct rtimer *t, void *ptr) {
   static uint16_t i = 0;
   static int NumSleep=0;
+  int time_in_proximity=0;
   PT_BEGIN(&pt);
 
   curr_timestamp = clock_time(); 
@@ -117,15 +118,13 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     // 3D array: nodes
     curr_timestamp = clock_time();
     for(i=0; i<50; i++) {
-        if (nodes[i][0] == nodeID) {
-            if ( (curr_timestamp - nodes[i][2]) > 30 ) {
-                // nodes[i][1] = first detected time
-                // nodes[i][2] = most recent time
-                printf("%d LEAVE %d\n", curr_timestamp, nodeID);
-                time_in_proximity = nodes[i][2] - nodes[i][1];
-                printf("Time in proximity: %d\n", time_in_proximity)
-            }       
-        }
+      if ( (curr_timestamp - nodes[i][2]) > 30 ) {
+          // nodes[i][1] = first detected time
+          // nodes[i][2] = most recent time
+          printf("%lu LEAVE %d\n", curr_timestamp, nodes[i][0]);
+          time_in_proximity = nodes[i][2] - nodes[i][1];
+          printf("Time in proximity: %d\n", time_in_proximity);
+      }
     }
   }
   PT_END(&pt);
