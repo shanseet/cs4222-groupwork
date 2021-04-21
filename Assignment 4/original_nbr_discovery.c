@@ -26,12 +26,22 @@ static struct pt pt;
 /*---------------------------------------------------------------------------*/
 static data_packet_struct received_packet;
 static data_packet_struct data_packet;
-std::map<int, int [2]> nodes;
+int nodes[50][3];
+int numNodes = 0;
 unsigned long curr_timestamp;
 /*---------------------------------------------------------------------------*/
 PROCESS(cc2650_nbr_discovery_process, "cc2650 neighbour discovery process");
 AUTOSTART_PROCESSES(&cc2650_nbr_discovery_process);
 /*---------------------------------------------------------------------------*/
+int indexOf( const int a[], int size, int value )
+{
+    int index = 0;
+
+    while ( index < size && a[index][0] != value ) ++index;
+
+    return ( index == size ? -1 : index );
+}
+
 static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
@@ -40,13 +50,18 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 
   int currNode = (int)received_packet.src_id;
   curr_timestamp = clock_time();
-  if (nodes.find(currNode) == nodes.end()) {
+  if (nodes.indexOf(nodes, numNodes+1, currNode) == -1) {
     printf("%d DETECT %d", curr_timestamp, currNode);
-    nodes[currNode][0] = nodes[currNode][1] = curr_timestamp;
+    numNodes++;
+    // Add new nodeID to array
+    nodes[numNodes][0] = currNode;
+    // Add to both current and most recent timestamps
+    nodes[numNodes][1] = nodes[numNodes][2] = curr_timestamp;
   }
   else {
     printf("Received Node %lu || RSSI: %d\n", currNode, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI));
-    nodes[currNode][1] = curr_timestamp;
+    // Update only the most recent timestamp
+    nodes[numNodes][2] = curr_timestamp;
   }
 
   leds_off(LEDS_GREEN);
@@ -100,8 +115,11 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       }
       leds_off(LEDS_BLUE);
     }
+
+    curr_timestamp = clock_time();
+    std::map<int, int [2]>::iterator it = mapOfWordCount.begin();
   }
-  
+
   PT_END(&pt);
 }
 /*---------------------------------------------------------------------------*/
@@ -124,9 +142,6 @@ PROCESS_THREAD(cc2650_nbr_discovery_process, ev, data)
   uart1_set_input(serial_line_input_byte);
   serial_line_init();
   #endif
-
-  printf("CC2650 neighbour discovery\n");
-  printf("Node %d will be sending packet of size %d Bytes\n", node_id, (int)sizeof(data_packet_struct));
 
   // radio off
   NETSTACK_RADIO.off();
