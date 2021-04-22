@@ -12,12 +12,10 @@
 #include "powertrace.h"
 #endif
 /*---------------------------------------------------------------------------*/
-#define WAKE_TIME RTIMER_SECOND/10    // 10 HZ, 0.1s
+#define TIME_SLOT RTIMER_SECOND/10    // 10 HZ, 0.1s
+#define SLEEP_CYCLE  16        	      // 0 for never sleep
 /*---------------------------------------------------------------------------*/
-#define SLEEP_CYCLE  9        	      // 0 for never sleep
-#define SLEEP_SLOT RTIMER_SECOND/10   // sleep slot should not be too large to prevent overflow
-/*---------------------------------------------------------------------------*/
-// duty cycle = WAKE_TIME / (WAKE_TIME + SLEEP_SLOT * SLEEP_CYCLE)
+// duty cycle = TIME_SLOT / ((1+SLEEP_CYLE)*TIME_SLOT)
 /*---------------------------------------------------------------------------*/
 // sender timer
 static struct rtimer rt;
@@ -100,7 +98,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       leds_off(LEDS_RED);
 
       if(i != (NUM_SEND - 1)){
-        rtimer_set(t, RTIMER_TIME(t) + WAKE_TIME, 1, (rtimer_callback_t)sender_scheduler, ptr);
+        rtimer_set(t, RTIMER_TIME(t) + TIME_SLOT, 1, (rtimer_callback_t)sender_scheduler, ptr);
         PT_YIELD(&pt);
       }
     }
@@ -110,17 +108,12 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       // radio off
       NETSTACK_RADIO.off();
 
-      // SLEEP_SLOT cannot be too large as value will overflow,
-      // to have a large sleep interval, sleep many times instead
-
-      // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
-      // the average is SLEEP_CYCLE 
       NumSleep = random_rand() % (2 * SLEEP_CYCLE + 1);  
       // printf(" Sleep for %d slots \n",NumSleep);
 
       // NumSleep should be a constant or static int
       for(i = 0; i < NumSleep; i++){
-        rtimer_set(t, RTIMER_TIME(t) + SLEEP_SLOT, 1, (rtimer_callback_t)sender_scheduler, ptr);
+        rtimer_set(t, RTIMER_TIME(t) + TIME_SLOT, 1, (rtimer_callback_t)sender_scheduler, ptr);
         PT_YIELD(&pt);
       }
       leds_off(LEDS_BLUE);
