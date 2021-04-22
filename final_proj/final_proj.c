@@ -85,7 +85,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
       }
       // For nodes already in the array
       else {
-        printf("Node %d || RSSI: %d\n || %lu", curr_node, curr_rssi, curr_timestamp);
+        printf("Node %d || RSSI: %d || %lu\n", curr_node, curr_rssi, curr_timestamp);
         // Update only the most recent timestamp
         nodes[node_index][2] = (int)curr_timestamp;
       }
