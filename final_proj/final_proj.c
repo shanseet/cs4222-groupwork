@@ -56,9 +56,9 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
   if (nodes_in_proximity > 10) {
     threshold = -100;
   } else if (nodes_in_proximity > 5) {
-    threshold = -75;
+    threshold = -100;
   } else {
-    threshold = -50;
+    threshold = -100;
   }
 
   if (curr_rssi > threshold) {
