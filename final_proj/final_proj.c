@@ -146,7 +146,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
 
     for(i=0; i<50; i++) {
       // Secondary check if the most recent time non 0, meaning they are not uninitialized
-      if ((((int)curr_timestamp - nodes[i][2]) > 30) && (nodes[i][2] > 0)) {
+      if (((nodes[i][3] == 1) && ((int)curr_timestamp - nodes[i][2]) > 30)) {
           printf("%lu LEAVE %d\n", curr_timestamp, nodes[i][0]);
           time_in_proximity = nodes[i][2] - nodes[i][1];
           
