@@ -13,7 +13,7 @@
 #endif
 /*---------------------------------------------------------------------------*/
 #define TIME_SLOT RTIMER_SECOND/10    // 10 HZ, 0.1s
-#define SLEEP_CYCLE  16        	      // 0 for never sleep
+#define SLEEP_CYCLE  10                // 0 for never sleep
 /*---------------------------------------------------------------------------*/
 // duty cycle = TIME_SLOT / ((1+SLEEP_CYLE)*TIME_SLOT)
 /*---------------------------------------------------------------------------*/
@@ -37,7 +37,7 @@ AUTOSTART_PROCESSES(&cc2650_nbr_discovery_process);
 int indexOf( const int a[][4], int size, int value )
 {
     int index = 0;
-    while ( index < size && a[index][0] != value ) ++index;                                               
+    while ( index < size && a[index][0] != value ) ++index;
     return ( index == size ? -1 : index );
 }
 
@@ -54,11 +54,11 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
   curr_timestamp = clock_time() / CLOCK_SECOND;
 
   if (nodes_in_proximity > 10) {
-    threshold = -100;
+    threshold = -75;
   } else if (nodes_in_proximity > 5) {
-    threshold = -100;
+    threshold = -70;
   } else {
-    threshold = -100;
+    threshold = -65;
   }
 
   if (curr_rssi > threshold) {
@@ -103,7 +103,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
   int time_in_proximity=0;
   PT_BEGIN(&pt);
 
-  // curr_timestamp = clock_time(); 
+  // curr_timestamp = clock_time();
   // printf("Start clock %lu ticks, timestamp %3lu.%03lu\n", curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
 
   while(1){
@@ -129,7 +129,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       // radio off
       NETSTACK_RADIO.off();
 
-      NumSleep = random_rand() % (2 * SLEEP_CYCLE + 1);  
+      NumSleep = random_rand() % (2 * SLEEP_CYCLE + 1);
       // printf(" Sleep for %d slots \n",NumSleep);
 
       // NumSleep should be a constant or static int
@@ -196,3 +196,4 @@ PROCESS_THREAD(cc2650_nbr_discovery_process, ev, data)
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
+
