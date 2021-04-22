@@ -60,12 +60,12 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
     threshold = -50;
   }
 
-  if (curr_rssi > threshold)
+  if (curr_rssi > threshold) {
     // Detection of a new node
     if (node_index == -1) {
       printf("%lu DETECT %d\n", curr_timestamp, curr_node);
       nodes_in_proximity++;
-      pritnf("New node: %d || Nodes in proximity: %d", curr_node, nodes_in_proximity);
+      printf("New node: %d || Nodes in proximity: %d", curr_node, nodes_in_proximity);
       num_nodes++;
       // Add new nodeID to array
       nodes[num_nodes][0] = curr_node;
@@ -87,6 +87,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
         nodes[node_index][2] = (int)curr_timestamp;
       }
     }
+  }
 
   leds_off(LEDS_GREEN);
 }
