@@ -49,7 +49,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 
   int currNode = (int)received_packet.src_id;
   int node_index = indexOf(nodes, numNodes+1, currNode);
-  curr_timestamp = clock_time();
+  curr_timestamp = clock_time() / CLOCK_SECOND;
   // Detection of a new node
   if (node_index == -1) {
     printf("%lu DETECT %d\n", curr_timestamp, currNode);
@@ -126,7 +126,10 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       leds_off(LEDS_BLUE);
     }
     // 3D array: nodes
-    curr_timestamp = clock_time();
+    curr_timestamp = clock_time() / CLOCK_SECOND;
+    //printf("TIMESTAMP (MS): %lu\n", curr_timestamp);
+    //printf("TIMESTAMP (SEC): %lu\n", curr_timestamp/CLOCK_SECOND);
+    
     for(i=0; i<50; i++) {
       if ((((int)curr_timestamp - nodes[i][2]) > 30000) && (nodes[i][2] > 0)) {
           // nodes[i][1] = first detected time
