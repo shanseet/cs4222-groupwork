@@ -55,9 +55,9 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
   if (nodes_in_proximity > 10) {
     threshold = -100;
   } else if (nodes_in_proximity > 5) {
-    threshold = -75;
+    threshold = -100;
   } else {
-    threshold = -50;
+    threshold = -100;
   }
 
   if (curr_rssi > threshold) {
@@ -65,19 +65,19 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
     if (node_index == -1) {
       printf("%lu DETECT %d\n", curr_timestamp, curr_node);
       nodes_in_proximity++;
-      printf("New node: %d || Nodes in proximity: %d", curr_node, nodes_in_proximity);
+      printf("New node: %d || Nodes in proximity: %d\n", curr_node, nodes_in_proximity);
       num_nodes++;
       // Add new nodeID to array
       nodes[num_nodes][0] = curr_node;
       // Add to both current and most recent timestamps
-      nodes[num_nodes][1] = nodes[num_nodes][2] = curr_timestamp;
+      nodes[num_nodes][1] = (int)curr_timestamp;
     }
     else {
       // Detection of nodes that left but came back
-      if (nodes[node_index][1] == 0) {
+      if (nodes[node_index][2] == 0) {
         printf("%lu DETECT %d\n", curr_timestamp, curr_node);
         nodes_in_proximity++;
-        printf("Node: %d has returned || Nodes in proximity: %d", curr_node, nodes_in_proximity);
+        printf("Node: %d has returned || Nodes in proximity: %d\n", curr_node, nodes_in_proximity);
         nodes[node_index][1] = nodes[node_index][2] = (int)curr_timestamp;
       }
       // For nodes already in the array
@@ -147,6 +147,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     //printf("TIMESTAMP (SEC): %lu\n", curr_timestamp/CLOCK_SECOND);
 
     for(i=0; i<50; i++) {
+      // Secondary check if the most recent time non 0, meaning they are not uninitialized
       if ((((int)curr_timestamp - nodes[i][2]) > 30) && (nodes[i][2] > 0)) {
           // nodes[i][1] = first detected time
           // nodes[i][2] = most recent time
@@ -154,10 +155,10 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
           time_in_proximity = nodes[i][2] - nodes[i][1];
           
           // Reset nodes that left
-          nodes[i][1] = nodes[i][2] = 0;
+          nodes[i][2] = 0;
           printf("Time in proximity: %d\n", time_in_proximity);
           nodes_in_proximity--;
-          printf("Nodes in proximity: %d", nodes_in_proximity);
+          printf("Nodes in proximity: %d\n", nodes_in_proximity);
       }
       else {
         continue;
