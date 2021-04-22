@@ -83,6 +83,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
         nodes_in_proximity++;
         printf("Node: %d has returned || Nodes in proximity: %d\n", curr_node, nodes_in_proximity);
         nodes[node_index][1] = nodes[node_index][2] = (int)curr_timestamp;
+        nodes[node_index][3] = 1;
       }
       // For nodes already in the array
       else {
