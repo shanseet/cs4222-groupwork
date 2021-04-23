@@ -69,7 +69,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from) {
       // Add to both current and most recent timestamps
       nodes[num_nodes][1] = nodes[num_nodes][2] = (int)curr_timestamp;
       nodes[num_nodes][3] = 1;
-        num_nodes++;
+      num_nodes++;
     }
     else {
       // Detection of nodes that left but came back
