@@ -12,38 +12,35 @@
 #include "powertrace.h"
 #endif
 /*---------------------------------------------------------------------------*/
-#define TIME_SLOT RTIMER_SECOND/10    // 10 HZ, 0.1s
-#define SLEEP_CYCLE  10                // 0 for never sleep
+#define TIME_SLOT RTIMER_SECOND/10    // 100 ms
+#define SLEEP_CYCLE  10
 /*---------------------------------------------------------------------------*/
 // duty cycle = TIME_SLOT / ((1+SLEEP_CYLE)*TIME_SLOT)
 /*---------------------------------------------------------------------------*/
-// sender timer
 static struct rtimer rt;
 static struct pt pt;
 /*---------------------------------------------------------------------------*/
 static data_packet_struct received_packet;
 static data_packet_struct data_packet;
 int nodes[50][4];
-    // nodes[i][1] = first detected time
-    // nodes[i][2] = most recent time
-    // nodes[i][3] = proximity flag
+  // nodes[i][1] = first detected time
+  // nodes[i][2] = most recent time
+  // nodes[i][3] = proximity flag
 int num_nodes = 0;
 int nodes_in_proximity = 0;
 unsigned long curr_timestamp;
 /*---------------------------------------------------------------------------*/
-PROCESS(cc2650_nbr_discovery_process, "cc2650 neighbour discovery process");
-AUTOSTART_PROCESSES(&cc2650_nbr_discovery_process);
+PROCESS(cs4222_final_proj, "cs4222 final project");
+AUTOSTART_PROCESSES(&cs4222_final_proj);
 /*---------------------------------------------------------------------------*/
-int indexOf( const int a[][4], int size, int value )
-{
+int indexOf( const int a[][4], int size, int value ) {
     int index = 0;
     while ( index < size && a[index][0] != value ) ++index;
     return ( index == size ? -1 : index );
 }
-
+/*---------------------------------------------------------------------------*/
 static void
-broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
-{
+broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from) {
   leds_on(LEDS_GREEN);
   memcpy(&received_packet, packetbuf_dataptr(), sizeof(data_packet_struct));
 
@@ -91,7 +88,6 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
       }
     }
   }
-
   leds_off(LEDS_GREEN);
 }
 static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
@@ -103,14 +99,11 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
   int time_in_proximity=0;
   PT_BEGIN(&pt);
 
-  // curr_timestamp = clock_time();
-  // printf("Start clock %lu ticks, timestamp %3lu.%03lu\n", curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
-
   while(1){
-
     // radio on
     NETSTACK_RADIO.on();
 
+    // Device sends
     for(i = 0; i < NUM_SEND; i++){
       leds_on(LEDS_RED);
       
@@ -124,47 +117,46 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       }
     }
 
+    // Device sleeps
     if(SLEEP_CYCLE != 0){
       leds_on(LEDS_BLUE);
       // radio off
       NETSTACK_RADIO.off();
 
       NumSleep = random_rand() % (2 * SLEEP_CYCLE + 1);
-      // printf(" Sleep for %d slots \n",NumSleep);
 
-      // NumSleep should be a constant or static int
       for(i = 0; i < NumSleep; i++){
         rtimer_set(t, RTIMER_TIME(t) + TIME_SLOT, 1, (rtimer_callback_t)sender_scheduler, ptr);
         PT_YIELD(&pt);
       }
       leds_off(LEDS_BLUE);
     }
-    // 3D array: nodes
+
+    // Device checks for nodes not detected > 30s
     curr_timestamp = clock_time() / CLOCK_SECOND;
     //printf("TIMESTAMP (MS): %lu\n", curr_timestamp);
     //printf("TIMESTAMP (SEC): %lu\n", curr_timestamp/CLOCK_SECOND);
 
-    for(i=0; i<50; i++) {
-      // Secondary check if the most recent time non 0, meaning they are not uninitialized
+    // loop through all nodes detected since the beginning
+    for(i=0; i<num_nodes; i++) {
+      // Check if nodes in proximity have not been detected > 30s
       if (((nodes[i][3] == 1) && ((int)curr_timestamp - nodes[i][2]) > 30)) {
           printf("%lu LEAVE %d\n", curr_timestamp, nodes[i][0]);
           time_in_proximity = nodes[i][2] - nodes[i][1];
           
-          // Reset nodes that left
+          // Reset nodes that left to 0
           nodes[i][1] = nodes[i][2] = nodes[i][3] = 0;
+
           printf("Time in proximity: %d\n", time_in_proximity);
           nodes_in_proximity--;
           printf("Nodes in proximity: %d\n", nodes_in_proximity);
-      }
-      else {
-        continue;
       }
     }
   }
   PT_END(&pt);
 }
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(cc2650_nbr_discovery_process, ev, data)
+PROCESS_THREAD(cs4222_final_proj, ev, data)
 {
   PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
 
@@ -184,10 +176,8 @@ PROCESS_THREAD(cc2650_nbr_discovery_process, ev, data)
   serial_line_init();
   #endif
 
-  // radio off
   NETSTACK_RADIO.off();
 
-  // initialize data packet
   data_packet.src_id = node_id;
 
   // Start sender in one millisecond.
