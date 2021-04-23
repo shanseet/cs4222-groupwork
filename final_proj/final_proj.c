@@ -64,12 +64,12 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from) {
       printf("%lu DETECT %d\n", curr_timestamp, curr_node);
       nodes_in_proximity++;
       printf("New node: %d || Nodes in proximity: %d\n", curr_node, nodes_in_proximity);
-      num_nodes++;
       // Add new nodeID to array
       nodes[num_nodes][0] = curr_node;
       // Add to both current and most recent timestamps
       nodes[num_nodes][1] = nodes[num_nodes][2] = (int)curr_timestamp;
       nodes[num_nodes][3] = 1;
+        num_nodes++;
     }
     else {
       // Detection of nodes that left but came back
